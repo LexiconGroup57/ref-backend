@@ -1,0 +1,6 @@
+@ref_backend_HostAddress = http://localhost:5287
+
+GET {{ref_backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
