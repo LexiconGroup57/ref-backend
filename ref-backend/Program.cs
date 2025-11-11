@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using ref_backend.data;
 using ref_backend.models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<ReferenceDB>(options =>
+    options.UseSqlite("DataSource=references.db"));
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("RefPolicy", policy =>
@@ -25,13 +29,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
+using (var scope = app.Services.CreateScope())
+{
+    var _context = scope.ServiceProvider.GetRequiredService<ReferenceDB>();
+}
 
 app.UseHttpsRedirection();
 app.UseCors("RefPolicy");
-app.MapGet("api/references", () =>
+app.MapGet("api/references", (ReferenceDB _context) =>
 {
-    return new List<RefRecord>() {new RefRecord(1, "The Great Gatsby", "Fitzgerald, Scott", "1925", "HarperCollins")};
+    return _context.RefRecords.ToList();
+});
+app.MapPost("api/references", (RefRecord record, ReferenceDB _context) =>
+{
+    _context.RefRecords.Add(record);
+    _context.SaveChanges();
+    return record;
 });
 
 app.Run();
