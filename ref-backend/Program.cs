@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ref_backend.data;
 using ref_backend.models;
@@ -10,6 +11,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ReferenceDB>(options =>
     options.UseSqlite("DataSource=references.db"));
+builder.Services.AddAuthorization();
+builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+    .AddEntityFrameworkStores<ReferenceDB>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("RefPolicy", policy =>
@@ -36,10 +40,12 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 app.UseCors("RefPolicy");
+app.MapIdentityApi<IdentityUser>();
 app.MapGet("api/references", (ReferenceDB _context) =>
-{
-    return _context.RefRecords.ToList();
-});
+    {
+        return _context.RefRecords.ToList();
+    })
+    .RequireAuthorization();
 app.MapPost("api/references", (RefRecord record, ReferenceDB _context) =>
 {
     _context.RefRecords.Add(record);

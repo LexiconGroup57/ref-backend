@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ref_backend.models;
 
 namespace ref_backend.data;
 
-public class ReferenceDB : DbContext
+public class ReferenceDB : IdentityDbContext<IdentityUser>
 {
     public ReferenceDB(DbContextOptions<ReferenceDB> options) : base(options)
     {
