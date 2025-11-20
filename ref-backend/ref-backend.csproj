@@ -10,6 +10,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.21" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.11" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.21">
           <PrivateAssets>all</PrivateAssets>
@@ -17,6 +18,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.21" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.21" />
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="8.1.4" />
         <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="8.1.4" />

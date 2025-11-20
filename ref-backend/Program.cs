@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ref_backend.data;
 using ref_backend.models;
@@ -40,12 +41,27 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 app.UseCors("RefPolicy");
-app.MapIdentityApi<IdentityUser>();
+app.MapGroup("/user").MapIdentityApi<IdentityUser>();
+
+app.MapPost("/user/logout", async (SignInManager<IdentityUser> signInManager,
+    [FromBody] object empty) =>
+{
+    if (empty != null)
+    {
+        await signInManager.SignOutAsync();
+        return Results.Ok();
+    }
+    return Results.Unauthorized();
+})
+.WithOpenApi()
+.RequireAuthorization();
+
 app.MapGet("api/references", (ReferenceDB _context) =>
     {
         return _context.RefRecords.ToList();
     })
     .RequireAuthorization();
+
 app.MapPost("api/references", (RefRecord record, ReferenceDB _context) =>
 {
     _context.RefRecords.Add(record);
