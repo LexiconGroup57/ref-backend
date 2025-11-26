@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ref_backend.data;
 using ref_backend.models;
+using SQLitePCL;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +85,32 @@ app.MapPost("api/references", (RefRecord record, ReferenceDB _context) =>
     _context.RefRecords.Add(record);
     _context.SaveChanges();
     return record;
+});
+
+app.MapPost("api/references/delete/{id}", (int id, ReferenceDB _context) =>
+{
+    _context.RefRecords.Remove(new RefRecord { Id = id });
+    _context.SaveChanges();
+    return Results.Ok();
+});
+
+app.MapPost("api/references/duplicate/{id}", (int id, ReferenceDB _context) =>
+{
+    var record = _context.RefRecords.Find(id);
+    _context.RefRecords.Add(new RefRecord(record));
+    _context.SaveChanges();
+    return record;
+});
+
+app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _context) =>
+{
+    var oldRecord = _context.RefRecords.Find(id);
+    oldRecord.Title = record.Title;
+    oldRecord.Creator = record.Creator;
+    oldRecord.Date = record.Date;
+    oldRecord.Publisher = record.Publisher;
+    _context.SaveChanges();
+    return oldRecord;
 });
 
 app.Run();

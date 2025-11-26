@@ -18,4 +18,13 @@ public class RefRecord
         Date = date;
         Publisher = publisher;
     }
+    
+    public RefRecord(RefRecord record)
+    {
+        Id = record.Id;
+        Title = record.Title;
+        Creator = record.Creator;
+        Date = record.Date;
+        Publisher = record.Publisher;
+    }
 }
