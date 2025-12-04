@@ -74,25 +74,46 @@ app.MapPost("/user/logout", async (SignInManager<IdentityUser> signInManager,
     .RequireAuthorization()
     .WithOpenApi();
 
-app.MapGet("api/references", (ReferenceDB _context) =>
+app.MapGet("/user/current", (HttpContext context, UserManager<IdentityUser> userManager) =>
+{
+    var user = context.User;
+    return userManager.GetUserAsync(user);
+    
+}).RequireAuthorization();
+
+app.MapPost("api/customer", (Customer customer, ReferenceDB _context, UserManager<IdentityUser> userManager, HttpContext context) =>
+{
+    CustomerFactory factory = new CustomerFactory(context, userManager);
+    Customer newCustomer = factory.CreateCustomer(customer.Name, customer.Email, customer.Phone);
+    _context.Customers.Add(newCustomer);
+    _context.SaveChanges();
+    return newCustomer;
+});
+
+app.MapGet("api/references", (ReferenceDB _context, HttpContext context, UserManager<IdentityUser> userManager) =>
     {
-        return _context.RefRecords.ToList();
+        List<RefRecord> records = _context.RefRecords
+            .Where(r => r.CustomerId == userManager.GetUserId(context.User))
+            .ToList();
+        return records;
     })
     .RequireAuthorization();
 
-app.MapPost("api/references", (RefRecord record, ReferenceDB _context) =>
+app.MapPost("api/references", (RefRecord record, ReferenceDB _context, HttpContext context, UserManager<IdentityUser> userManager) =>
 {
+    record.CustomerId = userManager.GetUserId(context.User);
+    RefRecord newRecord = new RefRecord(record);
     _context.RefRecords.Add(record);
     _context.SaveChanges();
-    return record;
-});
+    return newRecord;
+}).RequireAuthorization();
 
 app.MapPost("api/references/delete/{id}", (int id, ReferenceDB _context) =>
 {
     _context.RefRecords.Remove(new RefRecord { Id = id });
     _context.SaveChanges();
     return Results.Ok();
-});
+}).RequireAuthorization();
 
 app.MapPost("api/references/duplicate/{id}", (int id, ReferenceDB _context) =>
 {
@@ -100,7 +121,7 @@ app.MapPost("api/references/duplicate/{id}", (int id, ReferenceDB _context) =>
     _context.RefRecords.Add(new RefRecord(record));
     _context.SaveChanges();
     return record;
-});
+}).RequireAuthorization();
 
 app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _context) =>
 {
@@ -111,6 +132,6 @@ app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _
     oldRecord.Publisher = record.Publisher;
     _context.SaveChanges();
     return oldRecord;
-});
+}).RequireAuthorization();
 
 app.Run();

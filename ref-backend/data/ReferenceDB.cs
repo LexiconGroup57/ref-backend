@@ -13,4 +13,5 @@ public class ReferenceDB : IdentityDbContext<IdentityUser>
     }
 
     public DbSet<RefRecord> RefRecords { get; set; }
+    public DbSet<Customer> Customers { get; set; }
 }
