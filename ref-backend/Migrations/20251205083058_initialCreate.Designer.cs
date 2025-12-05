@@ -11,8 +11,8 @@ using ref_backend.data;
 namespace ref_backend.Migrations
 {
     [DbContext(typeof(ReferenceDB))]
-    [Migration("20251119083104_identity")]
-    partial class identity
+    [Migration("20251205083058_initialCreate")]
+    partial class initialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -212,6 +212,36 @@ namespace ref_backend.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ref_backend.models.Customer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
+                });
+
             modelBuilder.Entity("ref_backend.models.RefRecord", b =>
                 {
                     b.Property<int>("Id")
@@ -219,6 +249,10 @@ namespace ref_backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Creator")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

@@ -249,6 +249,10 @@ namespace ref_backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Date")
                         .IsRequired()
                         .HasColumnType("TEXT");

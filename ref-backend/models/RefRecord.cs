@@ -7,8 +7,6 @@ public class RefRecord
     public string Creator { get; set; }
     public string Date { get; set; }
     public string Publisher { get; set; }
-
-    public Customer Customer { get; set; }
     public string CustomerId { get; set; }
 
     public RefRecord() { }

@@ -76,9 +76,8 @@ app.MapPost("/user/logout", async (SignInManager<IdentityUser> signInManager,
 
 app.MapGet("/user/current", (HttpContext context, UserManager<IdentityUser> userManager) =>
 {
-    var user = context.User;
-    return userManager.GetUserAsync(user);
-    
+    var userFrontend = context.User;
+    return userManager.GetUserName(userFrontend);
 }).RequireAuthorization();
 
 app.MapPost("api/customer", (Customer customer, ReferenceDB _context, UserManager<IdentityUser> userManager, HttpContext context) =>
