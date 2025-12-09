@@ -13,7 +13,6 @@ public class RefRecord
 
     public RefRecord(int id, string title, string creator, string date, string publisher, string customerId)
     {
-        Id = id;
         Title = title;
         Creator = creator;
         Date = date;
@@ -23,7 +22,6 @@ public class RefRecord
     
     public RefRecord(RefRecord record)
     {
-        Id = record.Id;
         Title = record.Title;
         Creator = record.Creator;
         Date = record.Date;
