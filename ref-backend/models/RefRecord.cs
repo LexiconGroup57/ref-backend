@@ -4,17 +4,17 @@ public class RefRecord
 {
     public int Id { get; set; }
     public string Title { get; set; }
-    public string Creator { get; set; }
+    public List<string> Creators { get; set; } = new List<string>();
     public string Date { get; set; }
     public string Publisher { get; set; }
     public string CustomerId { get; set; }
 
     public RefRecord() { }
 
-    public RefRecord(int id, string title, string creator, string date, string publisher, string customerId)
+    public RefRecord(int id, string title, List<string> creators, string date, string publisher, string customerId)
     {
         Title = title;
-        Creator = creator;
+        Creators = creators;
         Date = date;
         Publisher = publisher;
         CustomerId = customerId;
@@ -23,7 +23,7 @@ public class RefRecord
     public RefRecord(RefRecord record)
     {
         Title = record.Title;
-        Creator = record.Creator;
+        Creators = record.Creators;
         Date = record.Date;
         Publisher = record.Publisher;
         CustomerId = record.CustomerId;

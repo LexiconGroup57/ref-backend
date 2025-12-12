@@ -245,7 +245,7 @@ namespace ref_backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Creator")
+                    b.Property<string>("Creators")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

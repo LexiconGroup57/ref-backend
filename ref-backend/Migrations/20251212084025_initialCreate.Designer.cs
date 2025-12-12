@@ -11,7 +11,7 @@ using ref_backend.data;
 namespace ref_backend.Migrations
 {
     [DbContext(typeof(ReferenceDB))]
-    [Migration("20251205083058_initialCreate")]
+    [Migration("20251212084025_initialCreate")]
     partial class initialCreate
     {
         /// <inheritdoc />
@@ -248,7 +248,7 @@ namespace ref_backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Creator")
+                    b.Property<string>("Creators")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

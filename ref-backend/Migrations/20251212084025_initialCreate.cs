@@ -74,7 +74,7 @@ namespace ref_backend.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Title = table.Column<string>(type: "TEXT", nullable: false),
-                    Creator = table.Column<string>(type: "TEXT", nullable: false),
+                    Creators = table.Column<string>(type: "TEXT", nullable: false),
                     Date = table.Column<string>(type: "TEXT", nullable: false),
                     Publisher = table.Column<string>(type: "TEXT", nullable: false),
                     CustomerId = table.Column<string>(type: "TEXT", nullable: false)

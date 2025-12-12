@@ -126,7 +126,7 @@ app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _
 {
     var oldRecord = _context.RefRecords.Find(id);
     oldRecord.Title = record.Title;
-    oldRecord.Creator = record.Creator;
+    oldRecord.Creators = record.Creators;
     oldRecord.Date = record.Date;
     oldRecord.Publisher = record.Publisher;
     _context.SaveChanges();
