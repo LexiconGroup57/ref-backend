@@ -1,7 +1,13 @@
+using System.ClientModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
+using OpenAI;
+using OpenAI.Audio;
+using OpenAI.Chat;
+using OpenAI.Images;
 using ref_backend.data;
 using ref_backend.models;
 using SQLitePCL;
@@ -121,6 +127,25 @@ app.MapPost("api/references/duplicate/{id}", (int id, ReferenceDB _context) =>
     _context.SaveChanges();
     return record;
 }).RequireAuthorization();
+
+app.MapPost("/api/translate", async (string language, string phrase) =>
+{
+    var client = new ChatClient(
+        model: "gemma-3-12b-it-qat",
+        credential: new ApiKeyCredential("text"),
+        options: new OpenAIClientOptions()
+        {
+            Endpoint = new Uri("http://127.0.0.1:1234/v1")
+        });
+
+    List<ChatMessage> messages =
+    [
+        new SystemChatMessage($"Translate the given phrase into {language}. Return one single phrase."),
+        new UserChatMessage(phrase)
+    ];
+    var completion = await client.CompleteChatAsync(messages);
+    return completion.Value.Content[0].Text;
+});
 
 app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _context) =>
 {
