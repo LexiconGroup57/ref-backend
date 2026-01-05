@@ -100,7 +100,8 @@ app.MapGet("api/references", (ReferenceDB _context, HttpContext context, UserMan
         List<RefRecord> records = _context.RefRecords
             .Where(r => r.CustomerId == userManager.GetUserId(context.User))
             .ToList();
-        return records;
+        List<RefRecordDto> recordsDto = records.Select(r => new RefRecordDto(r)).ToList();
+        return recordsDto;
     })
     .RequireAuthorization();
 
