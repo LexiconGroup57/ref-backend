@@ -129,6 +129,25 @@ app.MapPost("api/references/duplicate/{id}", (int id, ReferenceDB _context) =>
     return record;
 }).RequireAuthorization();
 
+app.MapPost("/api/chat", async (string message) =>
+{
+    var client = new ChatClient(
+        model: "gemma-3-12b-it-qat",
+        credential: new ApiKeyCredential("text"),
+        options: new OpenAIClientOptions()
+        {
+            Endpoint = new Uri("http://127.0.0.1:1234/v1")
+        });
+
+    List<ChatMessage> messages =
+    [
+        new SystemChatMessage($"You are a helpful assistant. Respond with a reasonable answer to the following question:"),
+        new UserChatMessage(message)
+    ];
+    var completion = await client.CompleteChatAsync(messages);
+    return completion.Value.Content[0].Text;
+});
+
 app.MapPost("/api/translate", async (string language, string phrase) =>
 {
     var client = new ChatClient(
