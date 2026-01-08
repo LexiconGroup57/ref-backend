@@ -24,6 +24,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 );
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession();
 builder.Services.AddDbContext<ReferenceDB>(options =>
     options.UseSqlite("DataSource=references.db"));
 builder.Services.AddAuthorization();
@@ -63,7 +65,7 @@ app.UseHttpsRedirection();
 app.UseCors("RefPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseSession();
 app.MapGroup("/user").MapIdentityApi<IdentityUser>();
 
 app.MapPost("/user/logout", async (SignInManager<IdentityUser> signInManager,
@@ -129,7 +131,7 @@ app.MapPost("api/references/duplicate/{id}", (int id, ReferenceDB _context) =>
     return record;
 }).RequireAuthorization();
 
-app.MapPost("/api/chat", async (string message) =>
+app.MapPost("/api/chat", async (string message, HttpContext context) =>
 {
     var client = new ChatClient(
         model: "gemma-3-12b-it-qat",
@@ -139,12 +141,23 @@ app.MapPost("/api/chat", async (string message) =>
             Endpoint = new Uri("http://127.0.0.1:1234/v1")
         });
 
+    string userMessage = context.Session.GetString("userMessage") ?? "";
+    string assistantMessage = context.Session.GetString("assistantMessage") ?? "";
+    
     List<ChatMessage> messages =
-    [
-        new SystemChatMessage($"You are a helpful assistant. Respond with a reasonable answer to the following question:"),
-        new UserChatMessage(message)
-    ];
+    [ new SystemChatMessage($"You are a helpful assistant. Respond with a reasonable answer to the following question:"),];
+    if (userMessage != "")
+    {
+       messages.Add( new UserChatMessage(userMessage));
+       messages.Add(new AssistantChatMessage(assistantMessage));  
+    }
+    messages.Add(new UserChatMessage(message));
+    
     var completion = await client.CompleteChatAsync(messages);
+    
+    context.Session.SetString("userMessage", message);
+    context.Session.SetString("assistantMessage", completion.Value.Content[0].Text);
+    
     return completion.Value.Content[0].Text;
 });
 
