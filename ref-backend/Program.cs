@@ -1,4 +1,5 @@
 using System.ClientModel;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -46,7 +47,16 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-
+builder.Services.AddSingleton<ChatClient>(provider =>
+{
+    return new ChatClient(
+        model: "gemma-3-12b-it-qat",
+        credential: new ApiKeyCredential("text"),
+        options: new OpenAIClientOptions()
+        {
+            Endpoint = new Uri("http://127.0.0.1:1234/v1")
+        });
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -131,25 +141,17 @@ app.MapPost("api/references/duplicate/{id}", (int id, ReferenceDB _context) =>
     return record;
 }).RequireAuthorization();
 
-app.MapPost("/api/chat", async (string message, HttpContext context) =>
+app.MapPost("/api/chat", async (string message, HttpContext context, ChatClient client) =>
 {
-    var client = new ChatClient(
-        model: "gemma-3-12b-it-qat",
-        credential: new ApiKeyCredential("text"),
-        options: new OpenAIClientOptions()
-        {
-            Endpoint = new Uri("http://127.0.0.1:1234/v1")
-        });
-
     string userMessage = context.Session.GetString("userMessage") ?? "";
     string assistantMessage = context.Session.GetString("assistantMessage") ?? "";
     
     List<ChatMessage> messages =
-    [ new SystemChatMessage($"You are a helpful assistant. Respond with a reasonable answer to the following question:"),];
+        [ new SystemChatMessage($"You are a helpful assistant. Respond with a reasonable answer to the following question:"),];
     if (userMessage != "")
     {
-       messages.Add( new UserChatMessage(userMessage));
-       messages.Add(new AssistantChatMessage(assistantMessage));  
+        messages.Add( new UserChatMessage(userMessage));
+        messages.Add(new AssistantChatMessage(assistantMessage));  
     }
     messages.Add(new UserChatMessage(message));
     
@@ -161,16 +163,57 @@ app.MapPost("/api/chat", async (string message, HttpContext context) =>
     return completion.Value.Content[0].Text;
 });
 
-app.MapPost("/api/translate", async (string language, string phrase) =>
+app.MapPost("/api/chatdb", async (string message, int sessionId, ReferenceDB _context, ChatClient client) =>
 {
-    var client = new ChatClient(
-        model: "gemma-3-12b-it-qat",
-        credential: new ApiKeyCredential("text"),
-        options: new OpenAIClientOptions()
+    List<ChatMessage> messages = new();
+    var session = _context.ChatSessions.Find(sessionId);
+    if (session == null)
+    {
+        messages.Add(new SystemChatMessage("You are a helpful assistant. Respond with a reasonable answer to the following question:"));
+        messages.Add( new UserChatMessage(message));
+    }
+    else
+    {
+        var dbMessages = JsonSerializer.Deserialize<List<ChatMessageDto>>(session.MessageHistory);
+        messages = dbMessages.Select<ChatMessageDto, ChatMessage>(m =>
+            m.Role switch
+            {
+                "system" => new SystemChatMessage(m.Content),
+                "user" => new UserChatMessage(m.Content),
+                "assistant" => new AssistantChatMessage(m.Content),
+                _ => throw new ArgumentException($"Unknown role: {m.Role}")
+        }).ToList();
+        messages.Add(new UserChatMessage(message));
+    }
+    var completion = await client.CompleteChatAsync(messages);
+    messages.Add(new AssistantChatMessage(completion.Value.Content[0].Text));
+    var dtos = messages.Select(m => new ChatMessageDto
+    {
+        Role = m is SystemChatMessage ? "system" : m is UserChatMessage ? "user" : "assistant",
+        Content = m.Content[0].Text
+    }).ToList();
+    string json = JsonSerializer.Serialize(dtos);
+    if (session == null)
+    {
+        session = new ChatSession()
         {
-            Endpoint = new Uri("http://127.0.0.1:1234/v1")
-        });
+            UserId = "User",
+            MessageHistory = json
+        };
+        _context.ChatSessions.Add(session);
+    }
+    else
+    {
+        session.MessageHistory = json;
+        _context.Update(session);
+    }
+    _context.SaveChanges();
+    return session;
+});
 
+
+app.MapPost("/api/translate", async (string language, string phrase, ChatClient client) =>
+{
     List<ChatMessage> messages =
     [
         new SystemChatMessage($"Translate the given phrase into {language}. Return one single phrase."),
