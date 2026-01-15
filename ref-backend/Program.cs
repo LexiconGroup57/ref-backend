@@ -15,6 +15,7 @@ using SQLitePCL;
 
 var builder = WebApplication.CreateBuilder(args);
 
+DotNetEnv.Env.Load();
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
     .AddEntityFrameworkStores<ReferenceDB>();
 builder.Services.ConfigureApplicationCookie(options =>
@@ -47,15 +48,32 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+// builder.Services.AddSingleton<ChatClient>(provider =>
+// {
+//     return new ChatClient(
+//         model: "gemma-3-12b-it-qat",
+//         credential: new ApiKeyCredential("text"),
+//         options: new OpenAIClientOptions()
+//         {
+//             Endpoint = new Uri("http://127.0.0.1:1234/v1")
+//         });
+// });
+// builder.Services.AddSingleton<ChatClient>(provider =>
+// {
+//     return new ChatClient(
+//         model: "openai/gpt-4o-mini",
+//         credential: new ApiKeyCredential(Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? ""),
+//         options: new OpenAIClientOptions()
+//         {
+//             Endpoint = new Uri("https://models.github.ai/inference")
+//         });
+// });
 builder.Services.AddSingleton<ChatClient>(provider =>
 {
     return new ChatClient(
-        model: "gemma-3-12b-it-qat",
-        credential: new ApiKeyCredential("text"),
-        options: new OpenAIClientOptions()
-        {
-            Endpoint = new Uri("http://127.0.0.1:1234/v1")
-        });
+        model: "gpt-4.1",
+        credential: new ApiKeyCredential(Environment.GetEnvironmentVariable("OPENAI_TOKEN") ?? "")
+        );
 });
 var app = builder.Build();
 
@@ -211,7 +229,6 @@ app.MapPost("/api/chatdb", async (string message, int sessionId, ReferenceDB _co
     return session;
 });
 
-
 app.MapPost("/api/translate", async (string language, string phrase, ChatClient client) =>
 {
     List<ChatMessage> messages =
@@ -219,8 +236,47 @@ app.MapPost("/api/translate", async (string language, string phrase, ChatClient 
         new SystemChatMessage($"Translate the given phrase into {language}. Return one single phrase."),
         new UserChatMessage(phrase)
     ];
-    var completion = await client.CompleteChatAsync(messages);
+    var requestOptions = new ChatCompletionOptions()
+    {
+    };
+    var completion = await client.CompleteChatAsync(messages, requestOptions);
     return completion.Value.Content[0].Text;
+});
+
+app.MapPost("/api/advise", async (string language, string phrase, ChatClient client) =>
+{
+    ChatTool tool = ChatTool.CreateFunctionTool(
+        functionName: "getProfession", 
+        functionDescription: "Get the current user's profession"
+        );
+    
+    List<ChatMessage> messages =
+    [
+        new SystemChatMessage($"You are a work market specialist. Provide advice on the given phrase in relation to the current user's profession."),
+        new UserChatMessage(phrase)
+    ];
+    var requestOptions = new ChatCompletionOptions()
+    {
+        Tools = { tool }
+    };
+    var completion = await client.CompleteChatAsync(messages, requestOptions);
+    var content = completion.Value;
+    if (content.FinishReason == ChatFinishReason.ToolCalls)
+    {
+        messages.Add(new AssistantChatMessage(completion));
+        foreach (var toolCall in content.ToolCalls)
+        {
+            if (toolCall.FunctionName == "getProfession")
+            {
+                var profession = getProfession();
+                messages.Add(new ToolChatMessage(toolCall.Id, profession));
+                completion = await client.CompleteChatAsync(messages, requestOptions);
+                content = completion.Value;
+            }
+        }
+    }
+    
+    return content.Content[0].Text;
 });
 
 app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _context) =>
@@ -235,3 +291,8 @@ app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _
 }).RequireAuthorization();
 
 app.Run();
+
+static string getProfession()
+{
+    return "Pastry chef";
+}
