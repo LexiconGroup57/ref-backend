@@ -75,6 +75,13 @@ builder.Services.AddSingleton<ChatClient>(provider =>
         credential: new ApiKeyCredential(Environment.GetEnvironmentVariable("OPENAI_TOKEN") ?? "")
         );
 });
+builder.Services.AddSingleton<ImageClient>(provider =>
+{
+    return new ImageClient(
+        model: "dall-e-3",
+        credential: new ApiKeyCredential(Environment.GetEnvironmentVariable("OPENAI_TOKEN") ?? "")
+    );
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -91,6 +98,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 app.UseCors("RefPolicy");
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
@@ -277,6 +285,27 @@ app.MapPost("/api/advise", async (string language, string phrase, ChatClient cli
     }
     
     return content.Content[0].Text;
+});
+
+app.MapGet("api/image", async (string prompt, ImageClient client) =>
+{
+    ImageGenerationOptions options = new()
+    {
+        Quality = GeneratedImageQuality.High,
+        Size = GeneratedImageSize.W1024xH1024,
+        Style = GeneratedImageStyle.Vivid,
+        ResponseFormat = GeneratedImageFormat.Bytes
+    };
+    
+    GeneratedImage image = await client.GenerateImageAsync(prompt, options);
+    var finalImage = image.ImageBytes.ToStream();
+    var filePath = Path.Combine("wwwroot/images", $"{Guid.NewGuid()}.png");
+    using (var fileStream = new FileStream(filePath, FileMode.Create))
+    {
+        await finalImage.CopyToAsync(fileStream);
+    }
+    
+    return Results.File(finalImage, "image/png");
 });
 
 app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _context) =>
