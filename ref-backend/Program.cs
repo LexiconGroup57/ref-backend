@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenAI;
 using OpenAI.Audio;
 using OpenAI.Chat;
+using OpenAI.Embeddings;
 using OpenAI.Images;
 using ref_backend.data;
 using ref_backend.models;
@@ -81,6 +82,16 @@ builder.Services.AddSingleton<ImageClient>(provider =>
         model: "dall-e-3",
         credential: new ApiKeyCredential(Environment.GetEnvironmentVariable("OPENAI_TOKEN") ?? "")
     );
+});
+builder.Services.AddSingleton<EmbeddingClient>(provider =>
+{
+    return new EmbeddingClient(
+        model: "text-embedding-nomic-embed-text-v1.5",
+        credential: new ApiKeyCredential(Environment.GetEnvironmentVariable("OPENAI_TOKEN") ?? ""),
+        options: new OpenAIClientOptions()
+        {
+            Endpoint = new Uri("http://127.0.0.1:1234/v1")
+        });
 });
 var app = builder.Build();
 
@@ -306,6 +317,17 @@ app.MapGet("api/image", async (string prompt, ImageClient client) =>
     }
     
     return Results.File(finalImage, "image/png");
+});
+
+app.MapGet("api/embedding", async (EmbeddingClient client, string text) =>
+{
+    EmbeddingGenerationOptions options = new()
+    {
+        Dimensions = 3172
+    };
+    OpenAIEmbedding embedding = await client.GenerateEmbeddingAsync(text, options);
+    ReadOnlyMemory<float> vector = embedding.ToFloats();
+    return Results.Ok(vector);
 });
 
 app.MapPost("api/references/edit/{id}", (int id, RefRecord record, ReferenceDB _context) =>
