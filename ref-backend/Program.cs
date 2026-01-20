@@ -262,6 +262,49 @@ app.MapPost("/api/translate", async (string language, string phrase, ChatClient 
     return completion.Value.Content[0].Text;
 });
 
+app.MapPost("/api/mockbooks", async (int amount, ChatClient client) =>
+{
+    Byte[] mockSchema = """
+                        {
+                            "type": "object",
+                            "properties": {
+                                "item": {
+                                "type": "array",
+                                "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "Title": {"type": "string"},
+                                            "Creator": {"type": "string"},
+                                            "Date": {"type": "string"},
+                                            "Publisher": {"type": "string"}
+                                        },
+                                        "additionalProperties": false,
+                                        "required": ["Title", "Creator", "Date", "Publisher"]
+                                        }
+                                }
+                           },
+                           "additionalProperties": false,
+                           "required": ["item"]
+                        }
+                        """u8.ToArray();
+    
+    List<ChatMessage> messages =
+    [
+        new SystemChatMessage($"You are providing mock data for a frontend application. Generate {amount} mock books."),
+        new UserChatMessage("")
+    ];
+    var requestOptions = new ChatCompletionOptions()
+    {
+        ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+            jsonSchemaFormatName: "mockbooks",
+            jsonSchema: BinaryData.FromBytes(mockSchema),
+            jsonSchemaIsStrict: false
+            )
+    };
+    var completion = await client.CompleteChatAsync(messages, requestOptions);
+    return completion.Value.Content[0].Text;
+});
+
 app.MapPost("/api/advise", async (string language, string phrase, ChatClient client) =>
 {
     ChatTool tool = ChatTool.CreateFunctionTool(
